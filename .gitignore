@@ -1,2 +1,6 @@
 pkg
 bin
+github.com
+go.mongodb.org
+golang.org
+gopkg.in
