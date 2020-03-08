@@ -2,11 +2,11 @@ package views
 
 import (
   "github.com/gin-gonic/gin"
-  "log"
+  // "log"
   "context"
   "models"
   // "fmt"
-  // "reflect" // Get an object type
+  // "reflect" // reflect.TypeOf(data)
   "time"
 
   "go.mongodb.org/mongo-driver/bson"
@@ -17,6 +17,10 @@ import (
 
 func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
     fn := func(c *gin.Context) {
+      if (len(c.PostForm("author")) == 0 || len(c.PostForm("body")) == 0 || len(c.PostForm("title")) == 0){
+        c.JSON(400, gin.H{"message": "not valid data",})
+        return
+      }
       article := models.Article {
         ID: primitive.NewObjectID(),
         Author: c.PostForm("author"),
@@ -31,11 +35,11 @@ func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
         TimeCreated: time.Now(),
       }
 
-      insertResult, err := collection.InsertOne(context.TODO(), article)
+      result, err := collection.InsertOne(context.TODO(), article)
       if err != nil {
-          log.Fatal(err)
+        c.JSON(400, gin.H{"message": "can't post data to database", "body": nil})
       } else {
-        c.JSON(200, gin.H{"result": insertResult,})
+        c.JSON(200, gin.H{"message": "create article sucess", "body": result})
       }
     }
     return gin.HandlerFunc(fn)
@@ -43,23 +47,21 @@ func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
 
 func GetArticle(collection *mongo.Collection) gin.HandlerFunc {
     fn := func(c *gin.Context) {
-      var result models.Article
       id := c.Param("article_id")
       objID, err := primitive.ObjectIDFromHex(id)
-
       if err != nil {
-        log.Fatal(err)
+        c.JSON(400, gin.H{"message": "error id", "body": nil})
+        return
       }
+        var result models.Article
+        filter := bson.M{"_id": objID}
+        err = collection.FindOne(context.TODO(), filter).Decode(&result)
 
-      filter := bson.M{"_id": objID}
-      err = collection.FindOne(context.TODO(), filter).Decode(&result)
-
-      if err != nil {
-        log.Println(err)
-        c.JSON(500, gin.H{"error": err.Error(),})
-      } else {
-        c.JSON(200, gin.H{"result": result,})
-      }
+        if err != nil {
+          c.JSON(400, gin.H{"message": "can't get data from database", "body": nil})
+        } else {
+          c.JSON(200, gin.H{"message": "get data sucess", "body": result})
+        }
     }
     return gin.HandlerFunc(fn)
   }
@@ -68,64 +70,59 @@ func UpdateArticle(collection *mongo.Collection) gin.HandlerFunc {
     fn := func(c *gin.Context) {
       id := c.Param("article_id")
       objID, err := primitive.ObjectIDFromHex(id)
+
+      if err != nil {
+        c.JSON(400, gin.H{"message": "error id", "body": nil})
+        return
+      }
+
+      query := bson.M{}
+      c.PostForm("author")
+      for key, _ := range c.Request.PostForm {
+            query[key] = c.PostForm(key)
+        }
+
       filter := bson.M{"_id": bson.M{"$eq": objID}}
-      update := bson.M{"$set": bson.M{"body": "UpdateArticle"}}
+      update := bson.M{"$set": query}
+
       result, err := collection.UpdateOne(
               context.Background(),
               filter,
               update,
-          )
-    if err != nil {
-      c.JSON(500, gin.H{"error": err.Error(),})
-    } else {
-      c.JSON(200, gin.H{"result": result,})
+            )
+      if err != nil{
+        c.JSON(200, gin.H{"message": "ca't update data", "body": nil})
+      } else {
+        c.JSON(200, gin.H{"message": "update data sucess", "body": result})
+      }
     }
-  }
     return gin.HandlerFunc(fn)
-}
+  }
 
 
 
 func DeleteArticle(collection *mongo.Collection) gin.HandlerFunc {
     fn := func(c *gin.Context) {
       id := c.Param("article_id")
-      oid, err := primitive.ObjectIDFromHex(id)
+      objID, err := primitive.ObjectIDFromHex(id)
 
       if err != nil {
-        log.Fatal("Primitive error\n", err)
+        c.JSON(400, gin.H{"message": "error id", "body": nil})
+        return
       }
 
-      filter := bson.M{"_id": oid}
-      res, err := collection.DeleteOne(context.TODO(), filter)
-      // fmt.Println("DeleteOne Result TYPE:", reflect.TypeOf(res))
+      filter := bson.M{"_id": objID}
+      result, err := collection.DeleteOne(context.TODO(), filter)
 
       if err != nil {
-        c.JSON(500, gin.H{"error": err.Error(),})
+        c.JSON(400, gin.H{"message": "can't delete", "body": nil})
       } else {
-        if res.DeletedCount == 0 {
-          c.JSON(404, gin.H{"result": res,})
-          // fmt.Println("DeleteOne() document not found:", res)
+        if result.DeletedCount == 0 {
+          c.JSON(404, gin.H{"message": "data not found", "body": result})
         } else {
-          // fmt.Println("DeleteOne Result:", res)
-          c.JSON(200, gin.H{"result": res,})
+          c.JSON(200, gin.H{"message": "delete data sucess", "body": result})
         }
       }
     }
     return gin.HandlerFunc(fn)
   }
-
-
-  // article := models.Article {
-  //   Title: "Test Title",
-  //   Desctiption: "Test Desctiption",
-  //   Images: []string{"https://naked-science.ru/article/media/v-rossii-vyyavili-eshhe-shest-chelovek-bolnyh-novym-koronavirusom", "https://naked-science.ru/wp-content/uploads/2020/03/vaccine0.jpg"},
-  //   Body: "Test Body of article",
-  //   Tags: []string{"вакцинация", "укол"},
-  //   Category: "Медицина",
-  //   TimeCreated: time.Now(),
-  // }
-
-  // insertResult, err := collection.InsertOne(context.TODO(), article)
-  // if err != nil {
-  //     log.Fatal(err)
-  // }
