@@ -11,11 +11,12 @@ import (
   "go.mongodb.org/mongo-driver/bson"
   "go.mongodb.org/mongo-driver/mongo"
   "go.mongodb.org/mongo-driver/bson/primitive" // for BSON ObjectID
-
 )
 
-func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
+func CreateArticle(client *mongo.Client) gin.HandlerFunc {
     fn := func(c *gin.Context) {
+      collection := client.Database("appdb").Collection("articles")
+
       if (len(c.PostForm("author")) == 0 || len(c.PostForm("body")) == 0 || len(c.PostForm("title")) == 0){
         c.JSON(400, gin.H{"message": "not valid data",})
         return
@@ -44,8 +45,10 @@ func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
     return gin.HandlerFunc(fn)
 }
 
-func GetArticle(collection *mongo.Collection) gin.HandlerFunc {
+func GetArticle(client *mongo.Client) gin.HandlerFunc {
     fn := func(c *gin.Context) {
+      collection := client.Database("appdb").Collection("articles")
+
       id := c.Param("article_id")
       objID, err := primitive.ObjectIDFromHex(id)
       if err != nil {
@@ -63,10 +66,11 @@ func GetArticle(collection *mongo.Collection) gin.HandlerFunc {
         }
     }
     return gin.HandlerFunc(fn)
-  }
+}
 
-func UpdateArticle(collection *mongo.Collection) gin.HandlerFunc {
+func UpdateArticle(client *mongo.Client) gin.HandlerFunc {
     fn := func(c *gin.Context) {
+      collection := client.Database("appdb").Collection("articles")
       id := c.Param("article_id")
       objID, err := primitive.ObjectIDFromHex(id)
 
@@ -100,8 +104,10 @@ func UpdateArticle(collection *mongo.Collection) gin.HandlerFunc {
 
 
 
-func DeleteArticle(collection *mongo.Collection) gin.HandlerFunc {
+func DeleteArticle(client *mongo.Client) gin.HandlerFunc {
     fn := func(c *gin.Context) {
+      collection := client.Database("appdb").Collection("articles")
+
       id := c.Param("article_id")
       objID, err := primitive.ObjectIDFromHex(id)
 

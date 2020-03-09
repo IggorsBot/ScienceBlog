@@ -3,7 +3,6 @@ package articles
 import (
   "time"
   "go.mongodb.org/mongo-driver/bson/primitive" // for BSON ObjectID
-
 )
 
 type Article struct {

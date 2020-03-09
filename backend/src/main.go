@@ -30,7 +30,6 @@ func InitConnectionDB() (*mongo.Client) {
 
 func main(){
   client := InitConnectionDB()
-  collection := client.Database("appdb").Collection("articles")
-  router := routes.SetupRouter(collection)
+  router := routes.SetupRouter(client)
   router.Run(":8090")
 }
