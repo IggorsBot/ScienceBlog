@@ -1,10 +1,9 @@
-package views
+package articles
 
 import (
   "github.com/gin-gonic/gin"
   // "log"
   "context"
-  "models"
   // "fmt"
   // "reflect" // reflect.TypeOf(data)
   "time"
@@ -21,7 +20,7 @@ func CreateArticle(collection *mongo.Collection) gin.HandlerFunc {
         c.JSON(400, gin.H{"message": "not valid data",})
         return
       }
-      article := models.Article {
+      article := Article {
         ID: primitive.NewObjectID(),
         Author: c.PostForm("author"),
         Title: c.PostForm("title"),
@@ -53,7 +52,7 @@ func GetArticle(collection *mongo.Collection) gin.HandlerFunc {
         c.JSON(400, gin.H{"message": "error id", "body": nil})
         return
       }
-        var result models.Article
+        var result Article
         filter := bson.M{"_id": objID}
         err = collection.FindOne(context.TODO(), filter).Decode(&result)
 
