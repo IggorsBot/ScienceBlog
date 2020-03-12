@@ -6,7 +6,13 @@ import (
   "auth"
   "github.com/gin-gonic/gin"
   "go.mongodb.org/mongo-driver/mongo"
+  // "fmt"
 )
+
+func AuthMiddleware(c *gin.Context) {
+  // Check authorization
+  c.Next()
+}
 
 func SetupRouter(client *mongo.Client) *gin.Engine{
   router := gin.Default()
@@ -19,5 +25,14 @@ func SetupRouter(client *mongo.Client) *gin.Engine{
   router.GET("/api/user/:user_id", auth.GetUser(client))
   router.POST("/api/user/login", auth.Login(client))
   router.POST("/api/user/registration", auth.CreateUser(client))
+
+  authorized := router.Group("/")
+  authorized.Use(AuthMiddleware)
+  {
+    authorized.POST("/api/comment/create", articles.CreateComment(client))
+    authorized.GET("api/comment/:article_id", articles.GetComments(client))
+    // authorized.PUT("api/comment/:comment_id", articles.UpdateComment(client))
+    authorized.DELETE("api/comment/:comment_id/:article_id", articles.DeleteComment(client))
+  }
   return router
 }

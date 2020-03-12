@@ -16,12 +16,14 @@ type Article struct {
   Body string `bson:"body"`
   Tags []string `bson:"tags"`
   Category string `bson:"category"`
+  Comments []primitive.ObjectID `bson:comments`
   TimeCreated time.Time `bson:"time_created"`
 }
 
 
 type Comment struct {
   ID primitive.ObjectID `bson:"_id"`
+  Article primitive.ObjectID `bson:article`
   Author string `bson:"author"`
   Body string `bson:"body"`
   TimeCreated time.Time `bson:"time_created"`
