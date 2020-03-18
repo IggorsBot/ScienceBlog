@@ -32,7 +32,7 @@ func SetupRouter(client *mongo.Client) *gin.Engine{
     authorized.POST("/api/comment/create", articles.CreateComment(client))
     authorized.GET("api/comment/:article_id", articles.GetComments(client))
     // authorized.PUT("api/comment/:comment_id", articles.UpdateComment(client))
-    authorized.DELETE("api/comment/:comment_id/:article_id", articles.DeleteComment(client))
+    authorized.DELETE("api/comment", articles.DeleteComment(client))
   }
   return router
 }

@@ -226,6 +226,7 @@ func CreateComment(client *mongo.Client) gin.HandlerFunc {
 
 
     // В объекте статьи, в массив Comments добавляем новый коментарий
+    collection = client.Database("appdb").Collection("articles")
     article.Comments = append(article.Comments, comment.ID)
     filter = bson.M{"_id": bson.M{"$eq": articleID}}
     update := bson.M{"$set": bson.M{"comments": article.Comments}}
@@ -237,7 +238,7 @@ func CreateComment(client *mongo.Client) gin.HandlerFunc {
           )
     //
     if err != nil{
-      c.JSON(200, gin.H{"message": "can't update article-comments", "body": nil})
+      c.JSON(400, gin.H{"message": "can't update article-comments", "body": nil})
       } else {
         c.JSON(200, gin.H{"message": "create comment sucess", "body": resultArticle})
       }
@@ -248,7 +249,6 @@ func CreateComment(client *mongo.Client) gin.HandlerFunc {
 
 func DeleteComment(client *mongo.Client) gin.HandlerFunc {
   fn := func(c *gin.Context) {
-    collection := client.Database("appdb").Collection("comments")
 
     articleID, err := primitive.ObjectIDFromHex(c.PostForm("article_id"))
     commentID, err := primitive.ObjectIDFromHex(c.PostForm("comment_id"))
@@ -258,14 +258,17 @@ func DeleteComment(client *mongo.Client) gin.HandlerFunc {
       return
     }
 
+    collection := client.Database("appdb").Collection("articles")
     var article Article
     filter := bson.M{"_id": articleID}
     err = collection.FindOne(context.TODO(), filter).Decode(&article)
 
     if err != nil {
       c.JSON(400, gin.H{"message": "can't get article from database", "body": nil})
+      return
     }
 
+    // Удаляем комментарий из collection articles
     var comments []primitive.ObjectID
     for i := 0; i < len(article.Comments); i++{
       if (article.Comments[i] != commentID){
@@ -283,16 +286,22 @@ func DeleteComment(client *mongo.Client) gin.HandlerFunc {
           )
     if err != nil{
       c.JSON(400, gin.H{"message": "can't update article-comments", "body": nil})
+      return
     }
+    //
 
+    // Удаляем комментарий из collection comments
+    collection = client.Database("appdb").Collection("comments")
     filter = bson.M{"_id": commentID}
     commentResult, err := collection.DeleteOne(context.TODO(), filter)
 
     if err != nil {
       c.JSON(400, gin.H{"message": "can't delete comment", "body": nil})
+      return
       } else {
         if commentResult.DeletedCount == 0 {
           c.JSON(404, gin.H{"message": "comment doesn't exist", "body": commentResult})
+          return
           }
     }
     c.JSON(200, gin.H{"message": "delete comment sucess", "body": result})
